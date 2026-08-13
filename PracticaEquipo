@@ -1,0 +1,268 @@
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <chrono>
+
+using namespace std;
+
+const long long LIMITE = 10000000;
+
+long long variableCompartida = 1;
+
+mutex mtx;
+
+// ======================================================
+// HILO 1 - AITANA
+// ======================================================
+
+// SIN MUTEX
+void hilo1SinMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        // Mi operación:
+        // modificar constantemente la variable compartida
+
+        variableCompartida += (i % 10);
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 1 SIN mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+// CON MUTEX
+void hilo1ConMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        mtx.lock();
+
+        variableCompartida += (i % 10);
+
+        mtx.unlock();
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 1 CON mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+
+// ======================================================
+// HILO 2
+// ======================================================
+
+// SIN MUTEX
+void hilo2SinMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        /*
+        ============================================
+        AQUÍ EL HILO 2 COLOCA SU OPERACIÓN
+
+        Se debe modificar variableCompartida.
+
+        Ejemplo:
+
+        variableCompartida -= algunaOperacion;
+
+        ============================================
+        */
+
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 2 SIN mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+// CON MUTEX
+void hilo2ConMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        mtx.lock();
+
+        /*
+        ============================================
+        AQUÍ SE COLOCA LA MISMA OPERACIÓN DEL HILO 2
+        ============================================
+        */
+
+        mtx.unlock();
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 2 CON mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+
+// ======================================================
+// HILO 3
+// ======================================================
+
+// SIN MUTEX
+void hilo3SinMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        /*
+        ============================================
+        AQUÍ EL HILO 3 COLOCA SU OPERACIÓN
+
+        Se debe modificar variableCompartida.
+        ============================================
+        */
+
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 3 SIN mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+// CON MUTEX
+void hilo3ConMutex() {
+
+    auto inicio = chrono::high_resolution_clock::now();
+
+    for (long long i = 0; i < LIMITE; i++) {
+
+        mtx.lock();
+
+        /*
+        ============================================
+        AQUÍ EL SE COLOCA LA MISMA OPERACIÓN DEL HILO 3
+        ============================================
+        */
+
+        mtx.unlock();
+    }
+
+    auto fin = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempo = fin - inicio;
+
+    cout << "Tiempo Hilo 3 CON mutex: "
+         << tiempo.count()
+         << " segundos" << endl;
+}
+
+
+
+// ======================================================
+// MAIN
+// ======================================================
+
+int main() {
+
+    // --------------------------------------------------
+    // PRUEBA SIN MUTEX
+    // --------------------------------------------------
+
+    cout << "==========================================" << endl;
+    cout << "            PRUEBA SIN MUTEX" << endl;
+    cout << "==========================================" << endl;
+
+    variableCompartida = 1;
+
+    auto inicioTotal = chrono::high_resolution_clock::now();
+
+    thread hilo1(hilo1SinMutex);
+    thread hilo2(hilo2SinMutex);
+    thread hilo3(hilo3SinMutex);
+
+    hilo1.join();
+    hilo2.join();
+    hilo3.join();
+
+    auto finTotal = chrono::high_resolution_clock::now();
+
+    chrono::duration<double> tiempoTotal = finTotal - inicioTotal;
+
+    cout << endl;
+
+    cout << "Resultado final SIN mutex: "
+         << variableCompartida << endl;
+
+    cout << "Tiempo total SIN mutex: "
+         << tiempoTotal.count()
+         << " segundos" << endl;
+
+
+
+    // --------------------------------------------------
+    // PRUEBA CON MUTEX
+    // --------------------------------------------------
+
+    cout << endl;
+    cout << "==========================================" << endl;
+    cout << "            PRUEBA CON MUTEX" << endl;
+    cout << "==========================================" << endl;
+
+    variableCompartida = 1;
+
+    inicioTotal = chrono::high_resolution_clock::now();
+
+    thread hilo4(hilo1ConMutex);
+    thread hilo5(hilo2ConMutex);
+    thread hilo6(hilo3ConMutex);
+
+    hilo4.join();
+    hilo5.join();
+    hilo6.join();
+
+    finTotal = chrono::high_resolution_clock::now();
+
+    tiempoTotal = finTotal - inicioTotal;
+
+    cout << endl;
+
+    cout << "Resultado final CON mutex: "
+         << variableCompartida << endl;
+
+    cout << "Tiempo total CON mutex: "
+         << tiempoTotal.count()
+         << " segundos" << endl;
+
+
+    return 0;
+}
