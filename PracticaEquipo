@@ -73,7 +73,7 @@ void hilo2SinMutex() {
     auto inicio = chrono::high_resolution_clock::now();
 
     for (long long i = 0; i < LIMITE; i++) {
-        variableCompartida -= (i % 10);
+        variableCompartida -= ((i*3) % 7);
     }
 
     auto fin = chrono::high_resolution_clock::now();
@@ -94,7 +94,7 @@ void hilo2ConMutex() {
     for (long long i = 0; i < LIMITE; i++) {
 
         mtx.lock();
-        variableCompartida -= (i % 10);
+        variableCompartida -= ((i*3) % 7);
         mtx.unlock();
     }
 
@@ -110,7 +110,7 @@ void hilo2ConMutex() {
 
 
 // ======================================================
-// HILO 3
+// HILO 3 - CARLOS
 // ======================================================
 
 // SIN MUTEX
@@ -120,14 +120,8 @@ void hilo3SinMutex() {
 
     for (long long i = 0; i < LIMITE; i++) {
 
-        /*
-        ============================================
-        AQUÍ EL HILO 3 COLOCA SU OPERACIÓN
-
-        Se debe modificar variableCompartida.
-        ============================================
-        */
-
+        variableCompartida =
+            (variableCompartida * 2) % 1000000;
     }
 
     auto fin = chrono::high_resolution_clock::now();
@@ -149,11 +143,8 @@ void hilo3ConMutex() {
 
         mtx.lock();
 
-        /*
-        ============================================
-        AQUÍ EL SE COLOCA LA MISMA OPERACIÓN DEL HILO 3
-        ============================================
-        */
+        variableCompartida =
+            (variableCompartida * 2) % 1000000;
 
         mtx.unlock();
     }
@@ -166,8 +157,6 @@ void hilo3ConMutex() {
          << tiempo.count()
          << " segundos" << endl;
 }
-
-
 
 // ======================================================
 // MAIN
