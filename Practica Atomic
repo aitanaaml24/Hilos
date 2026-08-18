@@ -1,1 +1,141 @@
+#include <iostream>
+#include <thread>
+#include <atomic>
 
+// ============================================================================
+// VARIABLES GLOBALES COMPARTIDAS
+// Utilizan std::atomic para prevenir problemas de concurrencia al ser accedidas
+// por varios hilos simultáneamente.
+// ============================================================================
+std::atomic<long long> contadorGlobal(0);
+
+std::atomic<long long> contadorHilo1(0);
+std::atomic<long long> contadorHilo2(0); // <-- HILO 2 (TU HILO)
+std::atomic<long long> contadorHilo3(0);
+
+
+// ============================================================================
+// HILO 1: (INTEGRANTE 1)
+// Tarea: Cantidad de operaciones realizadas sobre 10 millones de datos
+// ============================================================================
+void ejecutarHilo1(long long totalDatos) {
+    std::cout << "[Hilo 1] Iniciando proceso...\n";
+    
+    long long contadorLocal = 0;
+
+    // ------------------------------------------------------------------------
+    // TODO: INTEGRANTE 1 - COLOCA AQUÍ TU ALGORITMO O PROCESO PESADO
+    // ------------------------------------------------------------------------
+    
+    // Ejemplo de plantilla para el Integrante 1:
+    // for (long long i = 0; i < totalDatos; ++i) {
+    //     // Realizar operaciones aritméticas complejas / pesadas
+    //     contadorLocal++;
+    // }
+
+    // ------------------------------------------------------------------------
+
+    // Asignación final al contador del Hilo 1
+    contadorHilo1.store(contadorLocal);
+
+    // Muestra el valor del contador al final del proceso
+    std::cout << "[Hilo 1] Proceso finalizado.\n";
+    std::cout << "[Hilo 1] Contador final: " << contadorHilo1.load() << "\n\n";
+}
+
+
+// ============================================================================
+// HILO 2: (TU HILO)
+// Tarea: Cantidad de números múltiplos de X encontrados en 10 millones de datos
+// ============================================================================
+void ejecutarHilo2(long long totalDatos, int factorMultiplo) {
+    std::cout << "[Hilo 2] Iniciando procesamiento de " << totalDatos << " datos...\n";
+    
+    long long contadorMúltiplosLocal = 0;
+
+    // Proceso pesado: Evaluar 10 millones de iteraciones
+    for (long long i = 1; i <= totalDatos; ++i) {
+        if (i % factorMultiplo == 0) {
+            contadorMúltiplosLocal++;
+        }
+    }
+
+    // Asignación final al contador del Hilo 2
+    contadorHilo2.store(contadorMúltiplosLocal);
+
+    // Muestra el valor del contador al final de su proceso
+    std::cout << "[Hilo 2] Proceso finalizado.\n";
+    std::cout << "[Hilo 2] Cantidad de multiplos de " << factorMultiplo 
+              << " encontrados: " << contadorHilo2.load() << "\n\n";
+}
+
+
+// ============================================================================
+// HILO 3: (INTEGRANTE 3)
+// Tarea: Cantidad de números mayores a X encontrados
+// ============================================================================
+void ejecutarHilo3(long long totalDatos) {
+    std::cout << "[Hilo 3] Iniciando proceso...\n";
+    
+    long long contadorLocal = 0;
+
+    // ------------------------------------------------------------------------
+    // TODO: INTEGRANTE 3 - COLOCA AQUÍ TU ALGORITMO O PROCESO PESADO
+    // ------------------------------------------------------------------------
+    
+    // Ejemplo de plantilla para el Integrante 3:
+    // for (long long i = 1; i <= totalDatos; ++i) {
+    //     // Evaluar condición (i > limite)
+    //     contadorLocal++;
+    // }
+
+    // ------------------------------------------------------------------------
+
+    // Asignación final al contador del Hilo 3
+    contadorHilo3.store(contadorLocal);
+
+    // Muestra el valor del contador al final del proceso
+    std::cout << "[Hilo 3] Proceso finalizado.\n";
+    std::cout << "[Hilo 3] Contador final: " << contadorHilo3.load() << "\n\n";
+}
+
+
+// ============================================================================
+// FUNCIÓN PRINCIPAL
+// ============================================================================
+int main() {
+    // Parámetros de trabajo
+    const long long TOTAL_DATOS = 10000000; // 10 Millones de datos
+    const int FACTOR_MULTIPLO = 7;          // Parámetro para Hilo 2
+
+    std::cout << "====================================================\n";
+    std::cout << "  INICIANDO EJECUCIÓN MULTIHILO (10 MILLONES DE DATOS)\n";
+    std::cout << "====================================================\n\n";
+
+    // Crear y lanzar los tres hilos en paralelo
+    std::thread t1(ejecutarHilo1, TOTAL_DATOS);
+    std::thread t2(ejecutarHilo2, TOTAL_DATOS, FACTOR_MULTIPLO);
+    std::thread t3(ejecutarHilo3, TOTAL_DATOS);
+
+    // Esperar a que los tres hilos concluyan sus procesos
+    t1.join();
+    t2.join();
+    t3.join();
+
+    // Suma global requerida: ContadorGlobal = ContadorHilo1 + ContadorHilo2 + ContadorHilo3
+    long long sumaTotal = contadorHilo1.load() + contadorHilo2.load() + contadorHilo3.load();
+    contadorGlobal.store(sumaTotal);
+
+    // Despliegue del resumen de resultados
+    std::cout << "====================================================\n";
+    std::cout << "                RESUMEN DE RESULTADOS               \n";
+    std::cout << "====================================================\n";
+    std::cout << "Contador Hilo 1 (Operaciones) : " << contadorHilo1.load() << "\n";
+    std::cout << "Contador Hilo 2 (Múltiplos)   : " << contadorHilo2.load() << "\n";
+    std::cout << "Contador Hilo 3 (Mayores a X) : " << contadorHilo3.load() << "\n";
+    std::cout << "----------------------------------------------------\n";
+    std::cout << "CONTADOR GLOBAL (SUMA TOTAL)  : " << contadorGlobal.load() << "\n";
+    std::cout << "====================================================\n";
+
+    return 0;
+}
