@@ -70,7 +70,7 @@ void hilo1()
 
 
 // =====================================================
-// HILO 2 - PERSONA 2
+// HILO 2 - Dessireé Niño Santel
 // =====================================================
 // PROCESO:
 // Buscar la cantidad de números múltiplos de X.
@@ -79,67 +79,52 @@ void hilo1()
 
 void hilo2()
 {
-    // =================================================
-    // COMPAÑERO 2:
-    // Escribir aquí su algoritmo.
-    //
-    // Debe:
-    //
-    // 1. Tomar el tiempo de inicio.
-    //
-    // 2. Recorrer los 10 millones de datos.
-    //
-    // 3. Encontrar los múltiplos de X.
-    //
-    // 4. Incrementar contadorHilo2.
-    //
-    // 5. Modificar contadorGlobal usando atomic.
-    //
-    // 6. Tomar el tiempo final.
-    //
-    // 7. Mostrar el contador de su hilo.
-    //
-    // =================================================
+    auto inicio = high_resolution_clock::now();
 
+    long long contadorLocal = 0;
 
+    for (int i = 0; i < NUM_DATOS; i++)
+    {
+        if (X != 0 && datos[i] % X == 0)
+        {
+            contadorLocal++;
+        }
+
+        contadorGlobal.fetch_add(1);
+    }
+
+    contadorHilo2.store(contadorLocal);
+
+    auto fin = high_resolution_clock::now();
+    duration<double> tiempo = fin - inicio;
+
+    cout << "Hilo 2 - Cantidad de multiplos de " << X << " encontrados: "
+         << contadorHilo2.load() << endl;
+
+    cout << "Tiempo Hilo 2: "
+         << tiempo.count()
+         << " segundos" << endl;
 }
 
-
 // =====================================================
-// HILO 3 - PERSONA 3
-// =====================================================
-// PROCESO:
-// Buscar la cantidad de números mayores que X.
-//
-// =====================================================
+// Hilo 3: Cuenta la cantidad de números mayores a X
+// -------------------------------------------------------------------
+void hilo_3_mayores(int x) {
+    long long contador_hilo3 = 0;
 
-void hilo3()
-{
-    // =================================================
-    // COMPAÑERO 3:
-    // Escribir aquí su algoritmo.
-    //
-    // Debe:
-    //
-    // 1. Tomar el tiempo de inicio.
-    //
-    // 2. Recorrer los 10 millones de datos.
-    //
-    // 3. Encontrar los números mayores que X.
-    //
-    // 4. Incrementar contadorHilo3.
-    //
-    // 5. Modificar contadorGlobal usando atomic.
-    //
-    // 6. Tomar el tiempo final.
-    //
-    // 7. Mostrar el contador de su hilo.
-    //
-    // =================================================
+    for (int i = 0; i < DATOS_TAMANO; ++i) {
+        if (datos[i] > x) {
+            contador_hilo3++;
+        }
+    }
 
+    // Bloqueo de seguridad para alterar la variable global
+    std::lock_guard<std::mutex> lock(mtx);
+    ContadorGlobal += contador_hilo3;
+
+    std::cout << "Hilo 3 (Numeros mayores a " << x << "): " << contador_hilo3 << std::endl;
 
 }
-
 
 // =====================================================
 // FUNCIÓN PRINCIPAL
