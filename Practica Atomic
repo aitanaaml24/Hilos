@@ -27,16 +27,11 @@ atomic<long long> contadorHilo3(0);
 // Variable global compartida por los 3 hilos
 atomic<long long> contadorGlobal(0);
 
-// =====================================================
-// VECTOR DE DATOS
-// Los 3 hilos trabajarán sobre los mismos datos
-// =====================================================
-
 vector<int> datos(NUM_DATOS);
 
 
 // =====================================================
-// HILO 1 - PERSONA 1
+// HILO 1 - AITANA
 // =====================================================
 // PROCESO:
 // Realizar operaciones aritméticas con los 10 millones
@@ -47,28 +42,20 @@ vector<int> datos(NUM_DATOS);
 
 void hilo1()
 {
-    // Inicio del tiempo del Hilo 1
     auto inicio = high_resolution_clock::now();
 
     long long contadorLocal = 0;
 
-    // Recorrer los 10 millones de datos
     for (int i = 0; i < NUM_DATOS; i++)
     {
-        // Operación aritmética
+
         int resultado = datos[i] * 2;
-
-        // Contar la operación realizada
         contadorLocal++;
-
-        // Modificar la variable global
         contadorGlobal.fetch_add(1);
     }
 
-    // Guardar el resultado del hilo
     contadorHilo1.store(contadorLocal);
 
-    // Fin del tiempo del Hilo 1
     auto fin = high_resolution_clock::now();
 
     duration<double> tiempo = fin - inicio;
