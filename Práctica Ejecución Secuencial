@@ -1,11 +1,11 @@
 #include <iostream>
 #include <thread>
-#include <mutex>
 #include <atomic>
+#include <mutex>
 #include <chrono>
 #include <vector>
 #include <random>
-#include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace std::chrono;
@@ -13,551 +13,249 @@ using namespace std::chrono;
 // =====================================================
 // CONFIGURACIÓN GENERAL
 // =====================================================
-
 const int NUM_DATOS = 10000000;
 const int X = 50;
 
-// =====================================================
-// DATOS COMPARTIDOS
-// =====================================================
-
 vector<int> datos(NUM_DATOS);
 
-
-// =====================================================
-// VARIABLES PARA MODALIDAD A - MUTEX
-// =====================================================
-
-long long contadorMutexHilo1 = 0;
-long long contadorMutexHilo2 = 0;
-long long contadorMutexHilo3 = 0;
-
-long long contadorGlobalMutex = 0;
-
-mutex mtx;
+// Variables para almacenar los tiempos del reporte final
+double tiempoMutex = 0.0;
+double tiempoAtomic = 0.0;
+double tiempoSecuencial = 0.0;
 
 
 // =====================================================
-// VARIABLES PARA MODALIDAD B - ATOMIC
+// MODALIDAD A: USO DE MUTEX
 // =====================================================
 
-atomic<long long> contadorAtomicHilo1(0);
-atomic<long long> contadorAtomicHilo2(0);
-atomic<long long> contadorAtomicHilo3(0);
+long long contM_Hilo1 = 0, contM_Hilo2 = 0, contM_Hilo3 = 0;
+long long contM_Global = 0;
+mutex mtxGlobal;
 
-atomic<long long> contadorGlobalAtomic(0);
-
-
-// =====================================================
-// VARIABLES PARA GUARDAR TIEMPOS
-// =====================================================
-
-double tiempoMutex = 0;
-double tiempoAtomic = 0;
-double tiempoSecuencial = 0;
-
-
-// =====================================================
-// =====================================================
-//              MODALIDAD A - MUTEX
-// =====================================================
-// =====================================================
-
-
-// -----------------------------------------------------
-// HILO 1 - PERSONA 1
-// Operaciones aritméticas
-// -----------------------------------------------------
-
-void mutexHilo1()
-{
-    auto inicio = high_resolution_clock::now();
-
-    long long contadorLocal = 0;
-
-    for (int i = 0; i < NUM_DATOS; i++)
-    {
-        // Operación aritmética
+void hilo1_mutex() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
         int resultado = datos[i] * 2;
-
-        contadorLocal++;
-
-        // Variable global protegida por Mutex
-        mtx.lock();
-
-        contadorGlobalMutex++;
-
-        mtx.unlock();
+        local++;
+        lock_guard<mutex> lock(mtxGlobal);
+        contM_Global++;
     }
-
-    contadorMutexHilo1 = contadorLocal;
-
-    auto fin = high_resolution_clock::now();
-
-    duration<double> tiempo = fin - inicio;
-
-    cout << "Mutex - Hilo 1: "
-         << contadorMutexHilo1 << endl;
-
-    cout << "Tiempo Mutex Hilo 1: "
-         << tiempo.count()
-         << " segundos" << endl;
+    contM_Hilo1 = local;
 }
 
-
-// -----------------------------------------------------
-// HILO 2 - PERSONA 2
-// Múltiplos de X
-// -----------------------------------------------------
-
-void mutexHilo2()
-{
-    // =================================================
-    // COMPAÑERO 2:
-    //
-    // COLOCAR AQUÍ EL ALGORITMO PARA BUSCAR
-    // LOS MÚLTIPLOS DE X.
-    //
-    // Debe usar:
-    //
-    // mtx.lock();
-    // contadorGlobalMutex++;
-    // mtx.unlock();
-    //
-    // También debe guardar:
-    //
-    // contadorMutexHilo2
-    //
-    // Y medir su tiempo.
-    // =================================================
+void hilo2_mutex() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (X != 0 && datos[i] % X == 0) {
+            local++;
+        }
+        lock_guard<mutex> lock(mtxGlobal);
+        contM_Global++;
+    }
+    contM_Hilo2 = local;
 }
 
-
-// -----------------------------------------------------
-// HILO 3 - PERSONA 3
-// Números mayores que X
-// -----------------------------------------------------
-
-void mutexHilo3()
-{
-    // =================================================
-    // COMPAÑERO 3:
-    //
-    // COLOCAR AQUÍ EL ALGORITMO PARA BUSCAR
-    // LOS NÚMEROS MAYORES QUE X.
-    //
-    // Debe usar:
-    //
-    // mtx.lock();
-    // contadorGlobalMutex++;
-    // mtx.unlock();
-    //
-    // También debe guardar:
-    //
-    // contadorMutexHilo3
-    //
-    // Y medir su tiempo.
-    // =================================================
+void hilo3_mutex() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (datos[i] > X) {
+            local++;
+        }
+        lock_guard<mutex> lock(mtxGlobal);
+        contM_Global++;
+    }
+    contM_Hilo3 = local;
 }
 
+void ejecutar_modalidad_mutex() {
+    cout << "\n------------------------------------------" << endl;
+    cout << " MODALIDAD A: 3 HILOS CON MUTEX" << endl;
+    cout << "------------------------------------------" << endl;
 
-// -----------------------------------------------------
-// EJECUTAR MODALIDAD MUTEX
-// -----------------------------------------------------
-
-void ejecutarMutex()
-{
-    cout << endl;
-    cout << "==========================================" << endl;
-    cout << "       MODALIDAD A - HILOS + MUTEX" << endl;
-    cout << "==========================================" << endl;
-
-    contadorGlobalMutex = 0;
+    contM_Hilo1 = contM_Hilo2 = contM_Hilo3 = contM_Global = 0;
 
     auto inicio = high_resolution_clock::now();
 
-    thread t1(mutexHilo1);
-    thread t2(mutexHilo2);
-    thread t3(mutexHilo3);
+    thread t1(hilo1_mutex);
+    thread t2(hilo2_mutex);
+    thread t3(hilo3_mutex);
 
     t1.join();
     t2.join();
     t3.join();
 
     auto fin = high_resolution_clock::now();
+    duration<double> duracion = fin - inicio;
+    tiempoMutex = duracion.count();
 
-    duration<double> tiempo = fin - inicio;
-
-    tiempoMutex = tiempo.count();
-
-    cout << endl;
-
-    cout << "Contador Hilo 1: "
-         << contadorMutexHilo1 << endl;
-
-    cout << "Contador Hilo 2: "
-         << contadorMutexHilo2 << endl;
-
-    cout << "Contador Hilo 3: "
-         << contadorMutexHilo3 << endl;
-
-    cout << "Contador Global: "
-         << contadorGlobalMutex << endl;
-
-    cout << "Tiempo total Mutex: "
-         << tiempoMutex
-         << " segundos" << endl;
+    cout << "Contador Hilo 1: " << contM_Hilo1 << endl;
+    cout << "Contador Hilo 2: " << contM_Hilo2 << endl;
+    cout << "Contador Hilo 3: " << contM_Hilo3 << endl;
+    cout << "Contador Global: " << contM_Global << endl;
+    cout << "Tiempo de ejecucion (Mutex): " << tiempoMutex << " segundos." << endl;
 }
 
 
-
 // =====================================================
-// =====================================================
-//              MODALIDAD B - ATOMIC
-// =====================================================
+// MODALIDAD B: USO DE ATOMIC
 // =====================================================
 
+atomic<long long> contA_Hilo1(0);
+atomic<long long> contA_Hilo2(0);
+atomic<long long> contA_Hilo3(0);
+atomic<long long> contA_Global(0);
 
-// -----------------------------------------------------
-// HILO 1 - PERSONA 1
-// -----------------------------------------------------
-
-void atomicHilo1()
-{
-    auto inicio = high_resolution_clock::now();
-
-    long long contadorLocal = 0;
-
-    for (int i = 0; i < NUM_DATOS; i++)
-    {
+void hilo1_atomic() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
         int resultado = datos[i] * 2;
-
-        contadorLocal++;
-
-        contadorGlobalAtomic.fetch_add(1);
+        local++;
+        contA_Global.fetch_add(1);
     }
-
-    contadorAtomicHilo1.store(contadorLocal);
-
-    auto fin = high_resolution_clock::now();
-
-    duration<double> tiempo = fin - inicio;
-
-    cout << "Atomic - Hilo 1: "
-         << contadorAtomicHilo1.load() << endl;
-
-    cout << "Tiempo Atomic Hilo 1: "
-         << tiempo.count()
-         << " segundos" << endl;
+    contA_Hilo1.store(local);
 }
 
-
-// -----------------------------------------------------
-// HILO 2 - PERSONA 2
-// -----------------------------------------------------
-
-void atomicHilo2()
-{
-    // =================================================
-    // COMPAÑERO 2:
-    //
-    // COLOCAR AQUÍ SU ALGORITMO DE MÚLTIPLOS DE X.
-    //
-    // Debe utilizar:
-    //
-    // contadorGlobalAtomic.fetch_add(1);
-    //
-    // Y guardar el resultado en:
-    //
-    // contadorAtomicHilo2
-    //
-    // =================================================
+void hilo2_atomic() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (X != 0 && datos[i] % X == 0) {
+            local++;
+        }
+        contA_Global.fetch_add(1);
+    }
+    contA_Hilo2.store(local);
 }
 
-
-// -----------------------------------------------------
-// HILO 3 - PERSONA 3
-// -----------------------------------------------------
-
-void atomicHilo3()
-{
-    // =================================================
-    // COMPAÑERO 3:
-    //
-    // COLOCAR AQUÍ SU ALGORITMO DE NÚMEROS
-    // MAYORES QUE X.
-    //
-    // Debe utilizar:
-    //
-    // contadorGlobalAtomic.fetch_add(1);
-    //
-    // Y guardar el resultado en:
-    //
-    // contadorAtomicHilo3
-    //
-    // =================================================
+void hilo3_atomic() {
+    long long local = 0;
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (datos[i] > X) {
+            local++;
+        }
+        contA_Global.fetch_add(1);
+    }
+    contA_Hilo3.store(local);
 }
 
+void ejecutar_modalidad_atomic() {
+    cout << "\n------------------------------------------" << endl;
+    cout << " MODALIDAD B: 3 HILOS CON ATOMIC" << endl;
+    cout << "------------------------------------------" << endl;
 
-// -----------------------------------------------------
-// EJECUTAR MODALIDAD ATOMIC
-// -----------------------------------------------------
-
-void ejecutarAtomic()
-{
-    cout << endl;
-    cout << "==========================================" << endl;
-    cout << "       MODALIDAD B - HILOS + ATOMIC" << endl;
-    cout << "==========================================" << endl;
-
-    contadorGlobalAtomic.store(0);
+    contA_Hilo1 = contA_Hilo2 = contA_Hilo3 = contA_Global = 0;
 
     auto inicio = high_resolution_clock::now();
 
-    thread t1(atomicHilo1);
-    thread t2(atomicHilo2);
-    thread t3(atomicHilo3);
+    thread t1(hilo1_atomic);
+    thread t2(hilo2_atomic);
+    thread t3(hilo3_atomic);
 
     t1.join();
     t2.join();
     t3.join();
 
     auto fin = high_resolution_clock::now();
+    duration<double> duracion = fin - inicio;
+    tiempoAtomic = duracion.count();
 
-    duration<double> tiempo = fin - inicio;
-
-    tiempoAtomic = tiempo.count();
-
-    cout << endl;
-
-    cout << "Contador Hilo 1: "
-         << contadorAtomicHilo1.load() << endl;
-
-    cout << "Contador Hilo 2: "
-         << contadorAtomicHilo2.load() << endl;
-
-    cout << "Contador Hilo 3: "
-         << contadorAtomicHilo3.load() << endl;
-
-    cout << "Contador Global: "
-         << contadorGlobalAtomic.load() << endl;
-
-    cout << "Tiempo total Atomic: "
-         << tiempoAtomic
-         << " segundos" << endl;
+    cout << "Contador Hilo 1: " << contA_Hilo1.load() << endl;
+    cout << "Contador Hilo 2: " << contA_Hilo2.load() << endl;
+    cout << "Contador Hilo 3: " << contA_Hilo3.load() << endl;
+    cout << "Contador Global: " << contA_Global.load() << endl;
+    cout << "Tiempo de ejecucion (Atomic): " << tiempoAtomic << " segundos." << endl;
 }
 
 
-
 // =====================================================
-// =====================================================
-//              MODALIDAD C - SECUENCIAL
-// =====================================================
+// MODALIDAD C: SECUENCIAL (SIN HILOS)
 // =====================================================
 
-// Aquí NO se utilizan hilos.
+void ejecutar_modalidad_secuencial() {
+    cout << "\n------------------------------------------" << endl;
+    cout << " MODALIDAD C: EJECUCION SECUENCIAL" << endl;
+    cout << "------------------------------------------" << endl;
 
-// -----------------------------------------------------
-// FUNCIÓN 1 - PERSONA 1
-// -----------------------------------------------------
-
-void secuencial1()
-{
-    long long contador = 0;
-
-    for (int i = 0; i < NUM_DATOS; i++)
-    {
-        int resultado = datos[i] * 2;
-
-        contador++;
-    }
-
-    cout << "Secuencial - Funcion 1: "
-         << contador << endl;
-}
-
-
-// -----------------------------------------------------
-// FUNCIÓN 2 - PERSONA 2
-// -----------------------------------------------------
-
-void secuencial2()
-{
-    // =================================================
-    // COMPAÑERO 2:
-    //
-    // COLOCAR AQUÍ EL MISMO PROCESO DE MÚLTIPLOS
-    // PERO SIN HILOS, MUTEX NI ATOMIC.
-    // =================================================
-}
-
-
-// -----------------------------------------------------
-// FUNCIÓN 3 - PERSONA 3
-// -----------------------------------------------------
-
-void secuencial3()
-{
-    // =================================================
-    // COMPAÑERO 3:
-    //
-    // COLOCAR AQUÍ EL MISMO PROCESO DE NÚMEROS
-    // MAYORES QUE X.
-    //
-    // SIN HILOS, SIN MUTEX Y SIN ATOMIC.
-    // =================================================
-}
-
-
-// -----------------------------------------------------
-// EJECUTAR MODALIDAD SECUENCIAL
-// -----------------------------------------------------
-
-void ejecutarSecuencial()
-{
-    cout << endl;
-    cout << "==========================================" << endl;
-    cout << "       MODALIDAD C - SECUENCIAL" << endl;
-    cout << "==========================================" << endl;
+    long long contS_Hilo1 = 0, contS_Hilo2 = 0, contS_Hilo3 = 0;
+    long long contS_Global = 0;
 
     auto inicio = high_resolution_clock::now();
 
-    secuencial1();
-    secuencial2();
-    secuencial3();
+    // Proceso 1
+    for (int i = 0; i < NUM_DATOS; i++) {
+        int resultado = datos[i] * 2;
+        contS_Hilo1++;
+        contS_Global++;
+    }
+
+    // Proceso 2
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (X != 0 && datos[i] % X == 0) {
+            contS_Hilo2++;
+        }
+        contS_Global++;
+    }
+
+    // Proceso 3
+    for (int i = 0; i < NUM_DATOS; i++) {
+        if (datos[i] > X) {
+            contS_Hilo3++;
+        }
+        contS_Global++;
+    }
 
     auto fin = high_resolution_clock::now();
+    duration<double> duracion = fin - inicio;
+    tiempoSecuencial = duracion.count();
 
-    duration<double> tiempo = fin - inicio;
-
-    tiempoSecuencial = tiempo.count();
-
-    cout << endl;
-
-    cout << "Tiempo total Secuencial: "
-         << tiempoSecuencial
-         << " segundos" << endl;
+    cout << "Contador Proceso 1: " << contS_Hilo1 << endl;
+    cout << "Contador Proceso 2: " << contS_Hilo2 << endl;
+    cout << "Contador Proceso 3: " << contS_Hilo3 << endl;
+    cout << "Contador Global: " << contS_Global << endl;
+    cout << "Tiempo de ejecucion (Secuencial): " << tiempoSecuencial << " segundos." << endl;
 }
 
 
-
 // =====================================================
-// GENERAR REPORTE AUTOMÁTICO
+// REPORTE COMPARATIVO FINAL
 // =====================================================
 
-void generarReporte()
-{
-    ofstream archivo("reporte.txt");
-
-    archivo << "==========================================" << endl;
-    archivo << "       REPORTE DE TIEMPOS DE EJECUCION" << endl;
-    archivo << "==========================================" << endl;
-
-    archivo << endl;
-
-    archivo << "MODALIDAD A - 3 HILOS + MUTEX" << endl;
-    archivo << "Tiempo: "
-            << tiempoMutex
-            << " segundos" << endl;
-
-    archivo << endl;
-
-    archivo << "MODALIDAD B - 3 HILOS + ATOMIC" << endl;
-    archivo << "Tiempo: "
-            << tiempoAtomic
-            << " segundos" << endl;
-
-    archivo << endl;
-
-    archivo << "MODALIDAD C - SECUENCIAL" << endl;
-    archivo << "Tiempo: "
-            << tiempoSecuencial
-            << " segundos" << endl;
-
-    archivo << endl;
-
-    archivo << "==========================================" << endl;
-    archivo << "              COMPARACION" << endl;
-    archivo << "==========================================" << endl;
-
-    if (tiempoMutex < tiempoAtomic &&
-        tiempoMutex < tiempoSecuencial)
-    {
-        archivo << "La modalidad mas rapida fue: MUTEX" << endl;
-    }
-    else if (tiempoAtomic < tiempoMutex &&
-             tiempoAtomic < tiempoSecuencial)
-    {
-        archivo << "La modalidad mas rapida fue: ATOMIC" << endl;
-    }
-    else
-    {
-        archivo << "La modalidad mas rapida fue: SECUENCIAL" << endl;
-    }
-
-    archivo.close();
-
-    cout << endl;
-    cout << "Reporte generado correctamente: reporte.txt"
-         << endl;
+void mostrar_reporte_tiempos() {
+    cout << "\n==================================================" << endl;
+    cout << " REPORTE COMPARATIVO DE TIEMPOS DE EJECUCION " << endl;
+    cout << "==================================================" << endl;
+    cout << fixed << setprecision(6);
+    cout << " A) Tres Hilos con MUTEX: " << tiempoMutex << " segundos" << endl;
+    cout << " B) Tres Hilos con ATOMIC: " << tiempoAtomic << " segundos" << endl;
+    cout << " C) Ejecucion SECUENCIAL: " << tiempoSecuencial << " segundos" << endl;
+    cout << "==================================================" << endl;
 }
 
 
-
 // =====================================================
-// MAIN
+// FUNCIÓN PRINCIPAL
 // =====================================================
 
-int main()
-{
+int main() {
     cout << "==========================================" << endl;
-    cout << "       PROGRAMA DE COMPARACION" << endl;
+    cout << " BENCHMARK" << endl;
     cout << "==========================================" << endl;
-
-    // =================================================
-    // GENERAR LOS 10 MILLONES DE DATOS
-    // =================================================
+    cout << "Generando " << NUM_DATOS << " datos aleatorios..." << endl;
 
     mt19937 generador(12345);
-
     uniform_int_distribution<int> distribucion(1, 100);
 
-    for (int i = 0; i < NUM_DATOS; i++)
-    {
+    for (int i = 0; i < NUM_DATOS; i++) {
         datos[i] = distribucion(generador);
     }
+    cout << "Datos generados correctamente.\n" << endl;
 
-    cout << "10 millones de datos generados."
-         << endl;
+    // Ejecutar las tres modalidades exigidas
+    ejecutar_modalidad_mutex();
+    ejecutar_modalidad_atomic();
+    ejecutar_modalidad_secuencial();
 
-
-    // =================================================
-    // A) MUTEX
-    // =================================================
-
-    ejecutarMutex();
-
-
-    // =================================================
-    // B) ATOMIC
-    // =================================================
-
-    ejecutarAtomic();
-
-
-    // =================================================
-    // C) SECUENCIAL
-    // =================================================
-
-    ejecutarSecuencial();
-
-
-    // =================================================
-    // D) REPORTE
-    // =================================================
-
-    generarReporte();
-
+    // Generar reporte final (Incisos d)
+    mostrar_reporte_tiempos();
 
     return 0;
 }
